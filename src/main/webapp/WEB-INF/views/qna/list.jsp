@@ -1,215 +1,326 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-<%-- fmt 태그 라이브러리는 더 이상 날짜 포맷팅에 사용되지 않으므로, 주석 처리하거나 제거할 수 있습니다. --%>
-<%-- <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %> --%>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Q&A 게시판</title>
+    <title>도서관 Q&A 게시판</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/resources/css/main.css">
     <style>
-        /* list.jsp만을 위한 스타일 */
+        /* 전체 배경 및 폰트 설정 */
+        body {
+            background: #f6f9fc;
+            font-family: 'Noto Sans KR', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        /* 컨테이너 */
+        .container {
+            width: 70%;
+            margin: 40px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+        /* 페이지 타이틀 */
+        h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+        /* Q&A 테이블 */
         .qa-board {
             width: 100%;
-            margin: 30px auto;
             border-collapse: collapse;
-            font-size: 1em;
-            min-width: 400px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            font-size: 0.9em;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        .qa-board thead tr {
-            background-color: #009879;
-            color: #ffffff;
-            text-align: left;
-            font-weight: bold;
+        /* colgroup으로 열 너비 지정 */
+        .qa-board colgroup col:nth-child(1) { width: 5%; }   /* 번호 */
+        .qa-board colgroup col:nth-child(2) { width: 15%; }  /* 카테고리 */
+        .qa-board colgroup col:nth-child(3) { width: 40%; }  /* 제목 */
+        .qa-board colgroup col:nth-child(4) { width: 12%; }  /* 작성일 */
+        .qa-board colgroup col:nth-child(5) { width: 8%; }   /* 조회수 */
+        .qa-board colgroup col:nth-child(6) { width: 10%; }  /* 상태 */
+        .qa-board colgroup col:nth-child(7) { width: 10%; }  /* 관리 */
+        /* 테이블 헤더 스타일 */
+        .qa-board thead {
+            background-color: #f9f9f9;
         }
+        .qa-board thead th {
+            color: #000;
+            padding: 6px;
+            text-align: center;
+            border-bottom: 1px solid #eaeaea;
+        }
+        /* 데이터 셀 기본 스타일 */
         .qa-board th,
         .qa-board td {
-            padding: 12px 15px;
-            border: 1px solid #dddddd;
+            padding: 6px;
+            text-align: center;
+            border-bottom: 1px solid #eaeaea;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .qa-board tbody tr {
-            border-bottom: 1px solid #dddddd;
+        .qa-board tbody tr:hover {
+            background-color: #eef9f9;
         }
-        .qa-board tbody tr:nth-of-type(even) { /* 짝수 행 배경색 */
-            background-color: #f3f3f3;
-        }
-        .qa-board tbody tr:last-of-type { /* 마지막 행 테두리 */
-            border-bottom: 2px solid #009879;
-        }
-        .qa-board tbody tr:hover { /* 호버 시 배경색 */
-            background-color: #f0f0f0;
-            cursor: pointer;
+        /* 제목 칸 스타일: 줄바꿈 허용 후 최대 2줄 표시, 초과 시 ellipsis */
+        .qa-title {
+            text-align: left;
+            padding-left: 8px;
         }
         .qa-title a {
-            text-decoration: none;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;       /* 최대 2줄 */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4em;          /* 한 줄 높이 */
+            max-height: calc(1.4em * 2);  /* 두 줄 높이 만큼 제한 */
+            white-space: normal;
             color: #333;
+            text-decoration: none;
             font-weight: bold;
         }
-        .qa-title a:hover {
-            color: #009879;
-            text-decoration: underline;
+        .qa-title span {
+            margin-left: 4px;
+            font-size: 0.85em;
+            vertical-align: middle;
+        }
+        /* 검색 폼과 버튼 스타일 */
+        .search-form {
+            text-align: right;
+            margin-bottom: 15px;
+        }
+        .search-form input,
+        .search-form select {
+            padding: 5px;
+            margin-left: 4px;
+            font-size: 0.9em;
+        }
+        .search-form button {
+            padding: 5px 10px;
+            font-size: 0.9em;
         }
         .write-button-area {
             text-align: right;
-            width: 100%;
-            margin: 10px auto;
+            margin: 15px 0;
         }
         .write-button {
-            background-color: #009879;
+            background: #007b7f;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1em;
-            text-decoration: none; /* <a> 태그 스타일 */
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            text-decoration: none;
         }
         .write-button:hover {
-            background-color: #007b66;
+            background: #005f6a;
         }
-        .no-qa-message {
-            width: 80%;
-            margin: 20px auto;
-            text-align: center;
-            padding: 20px;
-            border: 1px solid #ddd;
-            background-color: #f9f9f9;
-            color: #555;
-        }
-        .status-button {
-            background-color: #4CAF50; /* Green */
-            color: white;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 0.8em;
-            margin-left: 5px;
-        }
-        .status-button.waiting {
-            background-color: #f44336; /* Red */
-        }
-        .status-button:hover {
-            opacity: 0.8;
-        }
-        /* 페이징 스타일 추가 */
+        /* 페이지네이션 스타일 */
         .pagination {
             text-align: center;
-            margin: 20px 0;
+            margin-top: 20px;
         }
-        .pagination a, .pagination strong {
-            display: inline-block;
-            padding: 8px 16px;
-            text-decoration: none;
-            color: #009879;
+        .pagination a,
+        .pagination strong {
+            padding: 6px 10px;
+            margin: 0 3px;
+            border-radius: 6px;
             border: 1px solid #ddd;
-            margin: 0 4px;
-            border-radius: 5px;
+            text-decoration: none;
+            color: #007b7f;
+            font-size: 0.9em;
         }
         .pagination strong {
-            background-color: #009879;
+            background-color: #007b7f;
             color: white;
-            border: 1px solid #009879;
         }
-        .pagination a:hover:not(.active) {
-            background-color: #f2f2f2;
+        /* 수정/삭제 버튼 그룹 */
+        .action-buttons {
+            display: inline-flex;
+            gap: 6px;
+            justify-content: center;
+        }
+        .action-buttons form {
+            display: inline;
+            margin: 0;
+            padding: 0;
+        }
+        .action-buttons button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            padding: 0;
+        }
+        .action-buttons button.edit {
+            color: white;
+            background-color: #007b7f;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .action-buttons button.delete {
+            background-color: #dc3545;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .action-buttons button:hover {
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
-    <jsp:include page="../includes/header.jsp" />
 
-    <div class="container" style="width: 64%">
-        <h2>Q&A 게시판</h2>
-        <c:if test="${not empty loggedInMember }">
-	        <div class="write-button-area" >
-	            <a href="${pageContext.request.contextPath}/qna/write" class="write-button">질문 등록</a>
-	        </div>
-        </c:if>
+<jsp:include page="../includes/header.jsp" />
 
-        <c:if test="${not empty message}">
-            <p style="color: green; font-weight: bold; text-align: center;">${message}</p>
-        </c:if>
-        <c:if test="${not empty errorMessage}">
-            <p style="color: red; font-weight: bold; text-align: center;">${errorMessage}</p>
-        </c:if>
+<div class="container">
+    <h2>도서관 Q&A 게시판</h2>
 
-        <table class="qa-board">
-            <thead>
-                <tr>
-                    <th style="width: 10%;">번호</th>
-                    <th style="width: 40%;">제목</th>
-                    <th style="width: 15%;">작성일</th>
-                    <th style="width: 10%;">조회수</th>
-                    <th style="width: 10%;">상태</th>
-                </tr>
-            </thead>
-            <tbody>
-                <c:choose>
-                    <c:when test="${not empty qnaList}">
-                        <c:forEach var="qna" items="${qnaList}">
-                            <tr>
-                                <td>${qna.qnaId}</td>
-                                <td class="qa-title">
-                                    <a href="${pageContext.request.contextPath}/qna/detail/${qna.qnaId}">
-                                        ${qna.title}
-                                        <c:if test="${not empty replies}"> 
-                                            <span style="color: blue; font-size: 0.8em;"> [답변 완료]</span>
-                                        </c:if>
-                                    </a>
-                                </td>
-                                <%-- ⭐⭐⭐ 이 부분이 변경되었습니다! ⭐⭐⭐ --%>
-                                <td>${qna.regDate}</td>
-                                <td>${qna.viewCount}</td>
-                                <td>
-                                    <c:choose>
-                                        <c:when test="${not empty repleies}">답변 완료</c:when>
-                                        <c:otherwise>대기중</c:otherwise>
-                                    </c:choose>
+    <!-- 검색 폼 -->
+    <form method="get" action="${pageContext.request.contextPath}/qna/list" class="search-form">
+        <input type="text" name="keyword" placeholder="검색어" value="${param.keyword}" />
+        <select name="category">
+            <option value="">전체</option>
+            <option value="도서관 서비스" ${param.category eq '도서관 서비스' ? 'selected' : ''}>도서관 서비스</option>
+            <option value="시설 문의" ${param.category eq '시설 문의' ? 'selected' : ''}>시설 문의</option>
+        </select>
+        <select name="sort">
+            <option value="latest" ${param.sort eq 'latest' ? 'selected' : ''}>최신순</option>
+            <option value="views" ${param.sort eq 'views' ? 'selected' : ''}>조회수순</option>
+        </select>
+        <button type="submit">검색</button>
+    </form>
 
-                                    <c:if test="${not empty sessionScope.adminUser}">
-                                        <%-- 상태 변경 폼은 현재 DB 컬럼 부재로 주석 처리 유지 --%>
-                                    </c:if>
-                                </td>
-                            </tr>
-                        </c:forEach>
-                    </c:when>
-                    <c:otherwise>
-                        <tr>
-                            <td colspan="5" class="no-qa-message">등록된 Q&A가 없습니다.</td>
-                        </tr>
-                    </c:otherwise>
-                </c:choose>
-            </tbody>
-        </table>
-
-        <%-- 페이징 영역 --%>
-        <div class="pagination">
-            <c:if test="${currentPage > 1}">
-                <a href="${pageContext.request.contextPath}/qna/list?page=${currentPage - 1}&pageSize=${pageSize}&searchKeyword=${searchKeyword}&searchCategory=${searchCategory}">&laquo;</a>
-            </c:if>
-
-            <c:forEach var="i" begin="1" end="${totalPages}">
-                <c:choose>
-                    <c:when test="${i eq currentPage}">
-                        <strong>${i}</strong>
-                    </c:when>
-                    <c:otherwise>
-                        <a href="${pageContext.request.contextPath}/qna/list?page=${i}&pageSize=${pageSize}&searchKeyword=${searchKeyword}&searchCategory=${searchCategory}">${i}</a>
-                    </c:otherwise>
-                </c:choose>
-            </c:forEach>
-
-            <c:if test="${currentPage < totalPages}">
-                <a href="${pageContext.request.contextPath}/qna/list?page=${currentPage + 1}&pageSize=${pageSize}&searchKeyword=${searchKeyword}&searchCategory=${searchCategory}">&raquo;</a>
-            </c:if>
-        </div>
-
+    <!-- 질문 등록 버튼 -->
+    <div class="write-button-area">
+        <c:choose>
+            <c:when test="${not empty sessionScope.loggedInMember}">
+                <a href="${pageContext.request.contextPath}/qna/write" class="write-button">✍️ 질문 등록</a>
+            </c:when>
+            <c:otherwise>
+                <button class="write-button"
+                        onclick="alert('로그인 후 이용 가능합니다.'); location.href='${pageContext.request.contextPath}/login';">
+                    질문 등록
+                </button>
+            </c:otherwise>
+        </c:choose>
     </div>
 
-    <jsp:include page="../includes/footer.jsp" />
+    <!-- Q&A 목록 테이블 -->
+    <table class="qa-board">
+        <colgroup>
+            <col />   <!-- 번호 -->
+            <col />   <!-- 카테고리 -->
+            <col />   <!-- 제목 -->
+            <col />   <!-- 작성일 -->
+            <col />   <!-- 조회수 -->
+            <col />   <!-- 상태 -->
+            <col />   <!-- 관리 -->
+        </colgroup>
+        <thead>
+            <tr>
+                <th>번호</th>
+                <th>카테고리</th>
+                <th>제목</th>
+                <th>작성일</th>
+                <th>조회수</th>
+                <th>상태</th>
+                <th>관리</th>
+            </tr>
+        </thead>
+        <tbody>
+            <c:choose>
+                <c:when test="${not empty qnaList}">
+                    <c:forEach var="qna" items="${qnaList}">
+                        <tr>
+                            <!-- 번호 -->
+                            <td>${qna.qnaId}</td>
+                            <!-- 카테고리 -->
+                            <td>${qna.category}</td>
+                            <!-- 제목 (2줄까지만 보이고 넘치면 ellipsis) -->
+                            <td class="qa-title">
+                                <a href="${pageContext.request.contextPath}/qna/detail/${qna.qnaId}">
+                                    ${qna.title}
+                                </a>
+                                <c:if test="${qna.openYn eq 'N'}">
+                                    <span>🔒 비공개</span>
+                                </c:if>
+                                <c:if test="${not empty qna.answer}">
+                                    <span>✔️ 답변완료</span>
+                                </c:if>
+                            </td>
+                            <!-- 작성일 -->
+                            <td><fmt:formatDate value="${qna.regDate}" pattern="yyyy-MM-dd"/></td>
+                            <!-- 조회수 -->
+                            <td>${qna.viewCount}</td>
+                            <!-- 상태 -->
+                            <td>
+                                <c:choose>
+                                    <c:when test="${not empty qna.answer}">답변 완료</c:when>
+                                    <c:otherwise>대기중</c:otherwise>
+                                </c:choose>
+                            </td>
+                            <!-- 관리(수정/삭제) -->
+                            <td>
+                                <div class="action-buttons">
+                                    <c:if test="${sessionScope.loggedInMember.memberId eq qna.writer}">
+                                        <form action="${pageContext.request.contextPath}/qna/edit/${qna.qnaId}" method="get">
+                                            <button type="submit" class="edit">수정</button>
+                                        </form>
+                                        <form action="${pageContext.request.contextPath}/qna/delete/${qna.qnaId}"
+                                              method="post" onsubmit="return confirm('삭제하시겠습니까?');">
+                                            <button type="submit" class="delete">삭제</button>
+                                        </form>
+                                    </c:if>
+                                </div>
+                            </td>
+                        </tr>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <tr>
+                        <td colspan="7" style="padding:12px; color:#555; text-align:center;">
+                            등록된 Q&A가 없습니다.
+                        </td>
+                    </tr>
+                </c:otherwise>
+            </c:choose>
+        </tbody>
+    </table>
+
+    <!-- 페이지네이션 -->
+    <div class="pagination">
+        <c:if test="${currentPage > 1}">
+            <a href="?page=1&keyword=${param.keyword}&category=${param.category}&sort=${param.sort}">처음</a>
+            <a href="?page=${currentPage - 1}&keyword=${param.keyword}&category=${param.category}&sort=${param.sort}">&laquo;</a>
+        </c:if>
+        <c:forEach var="i" begin="1" end="${totalPages}">
+            <c:choose>
+                <c:when test="${i eq currentPage}">
+                    <strong>${i}</strong>
+                </c:when>
+                <c:otherwise>
+                    <a href="?page=${i}&keyword=${param.keyword}&category=${param.category}&sort=${param.sort}">${i}</a>
+                </c:otherwise>
+            </c:choose>
+        </c:forEach>
+        <c:if test="${currentPage < totalPages}">
+            <a href="?page=${currentPage + 1}&keyword=${param.keyword}&category=${param.category}&sort=${param.sort}">&raquo;</a>
+            <a href="?page=${totalPages}&keyword=${param.keyword}&category=${param.category}&sort=${param.sort}">끝</a>
+        </c:if>
+    </div>
+</div>
+
+<jsp:include page="../includes/footer.jsp" />
 </body>
 </html>
